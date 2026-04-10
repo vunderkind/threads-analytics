@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="gt-grid">
+
+  <section class="gt-verdict-cell card-hero verdict-hero {{ panel.verdict_color }}">
+    <div class="hero-label">Ground truth</div>
+    <p class="hero-display">{{ panel.headline }}</p>
+    <div class="hero-footer">
+      Last {{ panel.window_days }} days vs {{ panel.window_days }} days prior
+    </div>
+  </section>
+
+  <section class="gt-profile-cell card profile-hero">
+    {% if profile and profile.profile_picture_url %}
+      <img class="profile-pic" src="{{ profile.profile_picture_url }}" alt="@{{ profile.username or handle }}">
+    {% else %}
+      <div class="profile-pic profile-pic-fallback">{{ (profile.username or handle)[0] | upper if (profile and profile.username) or handle else "·" }}</div>
+    {% endif %}
+    <div class="profile-info">
+      <h1 class="profile-handle">@{{ profile.username if profile and profile.username else handle }}</h1>
+      {% if profile and profile.biography %}
+        <p class="profile-bio">{{ profile.biography }}</p>
+      {% endif %}
+      <div class="experiment-callout">
+        <strong>{{ active_count }}</strong> active · <strong>{{ proposed_count }}</strong> proposed
+      </div>
+      <a class="cta" href="/experiments/new">+ New experiment</a>
+    </div>
+  </section>
+
+  {% for card in panel.cards %}
+    {% if card.name == panel.hero_metric_name %}
+      <section class="gt-metric-hero card-hero metric-hero {{ panel.hero_metric_color }}">
+        <div>
+          <div class="metric-hero-label">{{ card.label }}<span class="asterisk"></span></div>
+          <p class="metric-hero-value">{{ card.value }}</p>
+        </div>
+        <div class="metric-hero-caption">{{ card.description }}</div>
+      </section>
+    {% else %}
+      <section class="gt-metric-cell metric-card card">
+        <div class="metric-label">{{ card.label }}</div>
+        <div class="metric-value">{{ card.value }}</div>
+        <div class="metric-base-and-delta">
+          <span class="metric-base">baseline: {{ card.baseline }}</span>
+          {% if card.delta.label != "—" %}
+            <span class="metric-delta delta-{{ card.delta.class }}">{{ card.delta.label }}</span>
+          {% endif %}
+        </div>
+        <canvas class="metric-spark" id="spark-{{ card.name }}" height="36"></canvas>
+        <div class="metric-description">{{ card.description }}</div>
+        <div class="metric-n">n = {{ card.n_posts }} posts</div>
+      </section>
+    {% endif %}
+  {% endfor %}
+
+</div>
+
+<section class="card">
+  <h2>Recent runs</h2>
+  <table class="runs">
+    <thead><tr><th>#</th><th>started</th><th>status</th><th>queries</th></tr></thead>
+    <tbody>
+      {% for r in runs %}
+        <tr>
+          <td>{{ r.id }}</td>
+          <td>{{ r.started_at.strftime("%Y-%m-%d %H:%M") if r.started_at else "" }}</td>
+          <td class="status-{{ r.status }}">{{ r.status }}</td>
+          <td>{{ r.queries_used }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<script>
+  const cards = {{ panel.cards | tojson }};
+  const heroName = {{ panel.hero_metric_name | tojson }};
+  for (const card of cards) {
+    if (card.name === heroName) continue;
+    const ctx = document.getElementById('spark-' + card.name);
+    if (!ctx) continue;
+    const data = card.sparkline.map(v => (v === null || v === undefined) ? 0 : v);
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.map((_, i) => i),
+        datasets: [{
+          data: data,
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+          borderColor: card.delta.class === 'pos' ? '#1f8a3a' : (card.delta.class === 'neg' ? '#e0245e' : '#8e8e93'),
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } },
+        animation: false,
+      }
+    });
+  }
+</script>
+{% endblock %}

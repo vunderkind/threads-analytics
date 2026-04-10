@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="experiments-header">
+  <h1>Experiments</h1>
+  <a class="cta" href="/experiments/new">+ New experiment</a>
+</div>
+
+{% if proposed %}
+  <section id="suggestions" class="sugg-section">
+    <div class="sugg-head">
+      <h2 class="section-head" style="margin-top:0">Suggestions · {{ proposed | length }}</h2>
+      <div class="sugg-controls">
+        <button class="sugg-arrow" data-dir="-1" aria-label="Previous">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="sugg-arrow" data-dir="1" aria-label="Next">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+    <p class="muted small" style="margin-top:-6px;margin-bottom:10px">
+      Experiment hypotheses from Claude Opus. Each one is a falsifiable test — run it and the verdict engine tells you whether it held.
+    </p>
+    <div class="sugg-carousel" id="sugg-carousel">
+      {% for e in proposed %}
+        <div class="sugg-card card {% if loop.first %}card-hero card-hero-yellow{% endif %}">
+          <div class="exp-head">
+            <span class="exp-category">{{ e.category }}</span>
+            <span class="exp-metric">{{ e.primary_metric_label }}</span>
+            <form method="post" action="/experiments/{{ e.id }}/delete" class="exp-delete-form"
+                  onsubmit="event.stopPropagation(); return confirm('Delete this suggestion?');">
+              <button type="submit" class="exp-delete-btn" aria-label="Delete" title="Delete">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                </svg>
+              </button>
+            </form>
+          </div>
+          <h3 class="exp-title">{{ e.title }}</h3>
+          <p class="exp-hypothesis clamp-4">{{ e.hypothesis }}</p>
+          {% if e.notes %}
+            <p class="exp-reasoning clamp-3"><strong>Why ·</strong> {{ e.notes }}</p>
+          {% endif %}
+          <form method="post" action="/suggestions/{{ e.id }}/run" class="action-row">
+            <button type="submit" class="cta">Run this experiment</button>
+            <a href="/experiments/{{ e.id }}" class="secondary-link">details</a>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}
+
+{% if track_record %}
+  <section class="card" style="margin-top:18px">
+    <h2>Your track record</h2>
+    <p class="muted small">Per-category outcomes on completed experiments. The suggestion engine uses this to weight its proposals.</p>
+    <table class="track-table">
+      <thead><tr><th>Category</th><th>Total</th><th>Wins</th><th>Losses</th><th>Null</th><th>Insuf.</th><th>Win rate</th><th>Avg win effect</th></tr></thead>
+      <tbody>
+        {% for cat, stats in track_record.items() %}
+          <tr>
+            <td>{{ cat }}</td>
+            <td>{{ stats.total }}</td>
+            <td class="pos">{{ stats.wins }}</td>
+            <td class="neg">{{ stats.losses }}</td>
+            <td>{{ stats.nulls }}</td>
+            <td>{{ stats.insufficient }}</td>
+            <td>{{ "%.0f%%" | format(stats.win_rate * 100) if stats.win_rate is not none else "—" }}</td>
+            <td>{{ "%+.0f%%" | format(stats.avg_win_effect_pct * 100) if stats.avg_win_effect_pct is not none else "—" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endif %}
+
+<h2 class="section-head">Active · {{ active | length }}</h2>
+{% if active %}
+  <div class="page-grid">
+    {% for e in active %}
+      <div class="span-3">
+        {% include "_experiment_card.html" %}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="muted">No active experiments. Pick a suggestion above or <a href="/experiments/new">create one</a>.</p>
+{% endif %}
+
+<h2 class="section-head">Completed · {{ completed | length }}</h2>
+{% if completed %}
+  <div class="page-grid">
+    {% for e in completed %}
+      <div class="span-3">
+        {% include "_experiment_card.html" %}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="muted">No completed experiments yet.</p>
+{% endif %}
+
+<script>
+(function() {
+  const carousel = document.getElementById('sugg-carousel');
+  if (!carousel) return;
+  document.querySelectorAll('.sugg-arrow').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dir = parseInt(btn.getAttribute('data-dir'), 10);
+      const cardW = carousel.querySelector('.sugg-card')?.getBoundingClientRect().width || 360;
+      carousel.scrollBy({ left: dir * (cardW + 14), behavior: 'smooth' });
+    });
+  });
+})();
+</script>
+{% endblock %}

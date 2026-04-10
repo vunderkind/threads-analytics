@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="exp-head-row">
+  <a href="/experiments" class="back-link">← all experiments</a>
+  <span class="exp-status-pill status-{{ exp.status }}">{{ exp.status | upper }}</span>
+</div>
+
+<h1>{{ exp.title }}</h1>
+<p class="exp-category-line">
+  <span class="tag">{{ exp.category }}</span>
+  <span class="tag">metric: {{ exp.primary_metric_label }}</span>
+  <span class="tag">source: {{ 'Claude' if exp.source == 'suggested_by_claude' else 'you' }}</span>
+</p>
+
+<section class="card">
+  <h2>Hypothesis</h2>
+  <p>{{ exp.hypothesis }}</p>
+  {% if exp.notes %}
+    <p class="muted"><strong>Reasoning:</strong> {{ exp.notes }}</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Predicate</h2>
+  <pre class="predicate-spec">{{ exp.predicate_spec | tojson(indent=2) }}</pre>
+</section>
+
+<section class="card">
+  <h2>Timeline</h2>
+  <table class="timeline-table">
+    <tr><td>Created</td><td>{{ exp.created_at.strftime("%Y-%m-%d %H:%M") if exp.created_at else "—" }}</td></tr>
+    <tr><td>Baseline window</td><td>
+      {% if exp.baseline_start and exp.baseline_end %}
+        {{ exp.baseline_start.strftime("%Y-%m-%d") }} → {{ exp.baseline_end.strftime("%Y-%m-%d") }}
+      {% else %} — {% endif %}
+    </td></tr>
+    <tr><td>Variant window</td><td>
+      {% if exp.variant_start and exp.variant_end %}
+        {{ exp.variant_start.strftime("%Y-%m-%d") }} → {{ exp.variant_end.strftime("%Y-%m-%d") }}
+      {% else %} not started {% endif %}
+    </td></tr>
+    <tr><td>Ended</td><td>{{ exp.ended_at.strftime("%Y-%m-%d %H:%M") if exp.ended_at else "—" }}</td></tr>
+  </table>
+
+  <form class="action-row">
+    {% if exp.status == "proposed" %}
+      <button formaction="/experiments/{{ exp.id }}/start" formmethod="post">Start experiment</button>
+    {% endif %}
+    {% if exp.status == "active" %}
+      <button formaction="/experiments/{{ exp.id }}/evaluate" formmethod="post">Evaluate now</button>
+      <button formaction="/experiments/{{ exp.id }}/end" formmethod="post">End now</button>
+    {% endif %}
+    {% if exp.status in ("proposed", "active") %}
+      <button formaction="/experiments/{{ exp.id }}/abandon" formmethod="post" class="danger">Abandon</button>
+    {% endif %}
+  </form>
+</section>
+
+{% if exp.verdict %}
+  <section class="card verdict-card verdict-{{ exp.verdict.verdict }}">
+    <h2>Verdict: <span class="verdict-label">{{ exp.verdict.verdict | upper }}</span></h2>
+    <div class="verdict-grid">
+      <div class="verdict-stat">
+        <div class="verdict-stat-label">Primary metric (variant)</div>
+        <div class="verdict-stat-value">
+          {{ "%.4f" | format(exp.verdict.primary_metric_variant) if exp.verdict.primary_metric_variant is not none else "—" }}
+        </div>
+      </div>
+      <div class="verdict-stat">
+        <div class="verdict-stat-label">Primary metric (control/baseline)</div>
+        <div class="verdict-stat-value">
+          {{ "%.4f" | format(exp.verdict.primary_metric_baseline) if exp.verdict.primary_metric_baseline is not none else "—" }}
+        </div>
+      </div>
+      <div class="verdict-stat">
+        <div class="verdict-stat-label">Relative effect</div>
+        <div class="verdict-stat-value">
+          {{ "%+.0f%%" | format(exp.verdict.effect_size_pct * 100) if exp.verdict.effect_size_pct is not none else "—" }}
+        </div>
+      </div>
+      <div class="verdict-stat">
+        <div class="verdict-stat-label">p-value (Mann-Whitney U)</div>
+        <div class="verdict-stat-value">
+          {{ "%.3f" | format(exp.verdict.p_value) if exp.verdict.p_value is not none else "—" }}
+        </div>
+      </div>
+      <div class="verdict-stat">
+        <div class="verdict-stat-label">Cliff's δ (effect size)</div>
+        <div class="verdict-stat-value">
+          {{ "%+.2f" | format(exp.verdict.effect_cliffs_delta) if exp.verdict.effect_cliffs_delta is not none else "—" }}
+        </div>
+      </div>
+      <div class="verdict-stat">
+        <div class="verdict-stat-label">95% CI on median diff</div>
+        <div class="verdict-stat-value">
+          {% if exp.verdict.ci_low is not none and exp.verdict.ci_high is not none %}
+            [{{ "%.3f" | format(exp.verdict.ci_low) }}, {{ "%.3f" | format(exp.verdict.ci_high) }}]
+          {% else %} — {% endif %}
+        </div>
+      </div>
+      <div class="verdict-stat">
+        <div class="verdict-stat-label">n (variant / control)</div>
+        <div class="verdict-stat-value">{{ exp.verdict.variant_n }} / {{ exp.verdict.control_n }}</div>
+      </div>
+    </div>
+    <p class="verdict-interp">{{ exp.verdict.honest_interpretation }}</p>
+  </section>
+{% endif %}
+
+{% if classifications %}
+  <section class="card">
+    <h2>Post classifications ({{ exp.variant_n }} variant / {{ exp.control_n }} control)</h2>
+    <table class="class-table">
+      <thead>
+        <tr><th>Bucket</th><th>When</th><th>Text</th><th>Reason</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for c in classifications %}
+          <tr class="bucket-{{ c.bucket }}">
+            <td>{{ c.bucket }}</td>
+            <td>{{ c.created_at.strftime("%Y-%m-%d %H:%M") if c.created_at else "—" }}</td>
+            <td>{{ c.text }}</td>
+            <td class="muted small">{{ c.reason }}</td>
+            <td>{% if c.permalink %}<a href="{{ c.permalink }}" target="_blank">↗</a>{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endif %}
+
+{% endblock %}

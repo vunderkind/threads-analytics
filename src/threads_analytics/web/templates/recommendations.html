@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Recommendations</h1>
+{% if recommendations %}
+  <ol class="rec-full-list">
+    {% for r in recommendations %}
+      <li class="card rec-card status-{{ r.status }}">
+        <div class="rec-head">
+          <span class="rec-rank">#{{ r.rank }}</span>
+          <span class="rec-category">{{ r.category }}</span>
+          <span class="rec-status">{{ r.status }}</span>
+        </div>
+        <h3>{{ r.title }}</h3>
+        <p>{{ r.body }}</p>
+        {% if r.evidence %}
+          <details>
+            <summary>Evidence</summary>
+            <pre>{{ r.evidence | tojson(indent=2) }}</pre>
+          </details>
+        {% endif %}
+        <form method="post" action="/recommendations/{{ r.id }}/status" class="status-form">
+          <button name="status" value="applied" {% if r.status == "applied" %}disabled{% endif %}>Mark applied</button>
+          <button name="status" value="dismissed" {% if r.status == "dismissed" %}disabled{% endif %}>Dismiss</button>
+          <button name="status" value="pending" {% if r.status == "pending" %}disabled{% endif %}>Reopen</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ol>
+{% else %}
+  <p class="muted">No recommendations yet.</p>
+{% endif %}
+{% endblock %}

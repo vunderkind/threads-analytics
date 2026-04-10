@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Learning loop</h1>
+<p class="muted">
+  Each row is a prior recommendation measured against a later snapshot —
+  this is the feedback the recommender uses on the next pass.
+</p>
+{% if outcomes %}
+  <table class="outcomes-table">
+    <thead>
+      <tr>
+        <th>Recommendation</th>
+        <th>Category</th>
+        <th>Status</th>
+        <th>Δ followers</th>
+        <th>Δ engagement</th>
+        <th>Checked</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in outcomes %}
+        <tr>
+          <td>{{ o.title }}</td>
+          <td>{{ o.category }}</td>
+          <td>{{ o.status }}</td>
+          <td class="{{ 'pos' if o.follower_delta > 0 else 'neg' if o.follower_delta < 0 else '' }}">{{ o.follower_delta }}</td>
+          <td class="{{ 'pos' if o.engagement_delta > 0 else 'neg' if o.engagement_delta < 0 else '' }}">{{ o.engagement_delta }}</td>
+          <td>{{ o.checked_at.strftime("%Y-%m-%d %H:%M") if o.checked_at else "" }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="muted">No outcomes measured yet. Run the pipeline at least twice across several days to populate this.</p>
+{% endif %}
+{% endblock %}

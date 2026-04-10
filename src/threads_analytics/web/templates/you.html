@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>You</h1>
+<p class="muted">
+  The signals that are uniquely yours — the voice and quirks that would be
+  sanded away by optimizing purely for reach. The suggestion engine is told to
+  <strong>respect the protect list</strong> when proposing experiments.
+</p>
+
+{% if you %}
+
+  <div class="page-grid">
+
+    <section class="span-4 card-hero card-hero-blue you-hero-identity">
+      <h2>Core identity</h2>
+      <p class="you-identity-text">{{ you.core_identity }}</p>
+    </section>
+
+    {% if you.stylistic_signatures %}
+      <section class="span-2 card">
+        <h2>Signatures</h2>
+        <p class="muted small">Your stylistic fingerprints.</p>
+        <div class="chip-row">
+          {% for s in you.stylistic_signatures %}
+            <span class="chip" title="{{ s.evidence }}">{{ s.signature }}</span>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {% if you.protect_list %}
+      <section class="span-3 card you-protect">
+        <h2>Protect</h2>
+        <p class="muted small">Never optimize these away.</p>
+        <ul class="you-list">
+          {% for item in you.protect_list[:6] %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    {% if you.double_down_list %}
+      <section class="span-3 card you-double">
+        <h2>Double down</h2>
+        <p class="muted small">Uniquely yours and working.</p>
+        <ul class="you-list">
+          {% for item in you.double_down_list[:6] %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    {% if you.posts_that_sound_most_like_you %}
+      <section class="span-4 card">
+        <h2>Sounds most like you</h2>
+        <p class="muted small">The distilled voice — if you can only protect a few patterns, protect the ones that produced these.</p>
+        <div class="quintessential-list">
+          {% for p in you.posts_that_sound_most_like_you[:3] %}
+            <blockquote class="quintessential-quote">{{ p.text }}</blockquote>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {% if you.homogenization_risks %}
+      <section class="span-2 card you-risks">
+        <h2>Risks</h2>
+        <p class="muted small">What growth tactics could cost you.</p>
+        <ul class="risk-list-compact">
+          {% for r in you.homogenization_risks[:4] %}
+            <li>
+              <strong>{{ r.risk }}</strong>
+              <span class="muted">→ {{ r.if_you_do_this_you_lose }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+  </div>
+
+{% else %}
+  <p class="muted">No 'You' profile built yet. Run the pipeline to generate one.</p>
+{% endif %}
+{% endblock %}

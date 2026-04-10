@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>New experiment</h1>
+<p class="muted">Declare a hypothesis, a predicate that classifies your posts, and a primary metric. The system snapshots a baseline when you start it.</p>
+
+<form method="post" action="/experiments/new" class="exp-form card">
+  <label>Title
+    <input type="text" name="title" required maxlength="80" placeholder="e.g. Post between 7–9pm only">
+  </label>
+
+  <label>Hypothesis
+    <textarea name="hypothesis" rows="3" required placeholder="If I only post between 19–21 UTC, reach rate will rise because engagement velocity in the first hour will be higher."></textarea>
+  </label>
+
+  <label>Category
+    <select name="category" required>
+      <option value="TIMING">TIMING — which hours you post in</option>
+      <option value="LENGTH">LENGTH — character count range</option>
+      <option value="MEDIA">MEDIA — text vs image vs carousel</option>
+      <option value="HOOK">HOOK — opening phrase pattern</option>
+      <option value="TOPIC">TOPIC — posts tagged to a specific topic</option>
+      <option value="CADENCE">CADENCE — posts per day (window-level)</option>
+      <option value="ENGAGEMENT">ENGAGEMENT — your own reply behavior (window-level)</option>
+      <option value="CUSTOM">CUSTOM — manually tag posts</option>
+    </select>
+  </label>
+
+  <label>Predicate (JSON)
+    <textarea name="predicate_json" rows="3" placeholder='e.g. {"hours": [19, 20, 21]}'></textarea>
+    <span class="form-help">
+      <code>TIMING: {"hours": [19, 20, 21]}</code><br>
+      <code>LENGTH: {"min_len": 80, "max_len": 200}</code><br>
+      <code>MEDIA: {"media_types": ["IMAGE", "CAROUSEL_ALBUM"]}</code><br>
+      <code>HOOK: {"prefixes": ["you vs me", "hot take:"]}</code><br>
+      <code>TOPIC: {"topic_label": "AI models & Anthropic commentary"}</code>
+    </span>
+  </label>
+
+  <label>Primary metric
+    <select name="primary_metric" required>
+      {% for m in metric_order %}
+        <option value="{{ m }}">{{ metric_meta[m].label }} — {{ metric_meta[m].description }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>Variant window (days)
+    <input type="number" name="variant_window_days" value="14" min="1" max="90">
+  </label>
+
+  <label>Target delta (optional, e.g. 0.25 for +25%)
+    <input type="text" name="target_delta_pct" placeholder="0.25">
+  </label>
+
+  <label class="checkbox">
+    <input type="checkbox" name="start_now" checked> Start immediately (snapshots the baseline now)
+  </label>
+
+  <button type="submit">Create experiment</button>
+</form>
+{% endblock %}

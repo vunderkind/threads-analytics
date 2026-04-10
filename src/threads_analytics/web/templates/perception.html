@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Public perception</h1>
+<p class="muted">
+  A 5-second thin-slice read of your profile, grounded in Big Five personality
+  research and the Brunswik lens model of cue-based perception.
+</p>
+
+{% if perception %}
+
+  <div class="page-grid">
+
+    {% if perception.thin_slice %}
+      <section class="span-4 card-hero card-hero-yellow perception-pullquote">
+        <div class="perception-pullquote-label">Thin-slice judgment<span class="asterisk"></span></div>
+        <p class="perception-pullquote-text">“{{ perception.thin_slice }}”</p>
+      </section>
+    {% endif %}
+
+    {% if perception.signal_quality and perception.signal_quality.rating %}
+      <section class="span-2 card signal-quality-card">
+        <div class="sq-label">Signal quality</div>
+        <div class="sq-rating sq-{{ perception.signal_quality.rating }}">{{ perception.signal_quality.rating | upper }}</div>
+        <p class="sq-summary">{{ perception.signal_quality.summary }}</p>
+      </section>
+    {% endif %}
+
+    {% if perception.big_five %}
+      <section class="span-6 card bigfive-card">
+        <h2>Big Five read</h2>
+        <p class="muted small">
+          Each trait rated from a 5-second look at your profile. Confidence reflects
+          whether the cues are consistent. Extraversion and Conscientiousness are
+          judged reliably from thin slices; the others need more exposure.
+        </p>
+        <div class="bigfive-grid">
+          {% for trait in ["extraversion", "conscientiousness", "openness", "agreeableness", "neuroticism"] %}
+            {% set t = perception.big_five.get(trait) %}
+            {% if t %}
+              <div class="bigfive-row trait-{{ trait }}">
+                <div class="bigfive-row-head">
+                  <div class="bigfive-name">{{ trait | capitalize }}</div>
+                  <div class="bigfive-rating rating-{{ t.rating or 'medium' }}">{{ (t.rating or 'medium') | upper }}</div>
+                  <div class="bigfive-confidence">confidence: {{ t.confidence or 'medium' }}</div>
+                </div>
+                {% if t.cues %}
+                  <ul class="bigfive-cues">
+                    {% for c in t.cues %}<li>{{ c }}</li>{% endfor %}
+                  </ul>
+                {% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {% if perception.cue_clarity and perception.cue_clarity.explanation %}
+      <section class="span-3 card">
+        <h2>Cue clarity</h2>
+        <p class="perception-text">{{ perception.cue_clarity.explanation }}</p>
+        {% if perception.cue_clarity.clearTraits or perception.cue_clarity.ambiguousTraits %}
+          <div class="clarity-tags">
+            {% for t in perception.cue_clarity.clearTraits or [] %}
+              <span class="chip chip-pos">✓ {{ t }}</span>
+            {% endfor %}
+            {% for t in perception.cue_clarity.ambiguousTraits or [] %}
+              <span class="chip chip-warn">? {{ t }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </section>
+    {% endif %}
+
+    {% if perception.highest_leverage_fix and perception.highest_leverage_fix.cueToChange %}
+      <section class="span-3 card-hero card-hero-green leverage-fix-card">
+        <div class="roi-tag">Highest-leverage fix <span class="hypothesis-tag">HYPOTHESIS</span></div>
+        <h2>{{ perception.highest_leverage_fix.cueToChange }}</h2>
+        {% if perception.highest_leverage_fix.whatToChangeItTo %}
+          <p><strong>Do this ·</strong> {{ perception.highest_leverage_fix.whatToChangeItTo }}</p>
+        {% endif %}
+        {% if perception.highest_leverage_fix.expectedShift %}
+          <p><strong>Expected shift ·</strong> {{ perception.highest_leverage_fix.expectedShift }}</p>
+        {% endif %}
+      </section>
+    {% endif %}
+
+    {% if perception.misread_risks %}
+      <section class="span-6 card">
+        <h2>Misread risks</h2>
+        <p class="muted small">Cues that could lead a stranger to the wrong conclusion about you.</p>
+        <ul class="misread-list">
+          {% for m in perception.misread_risks[:4] %}
+            <li>
+              <div class="misread-cue"><strong>{{ m.cue }}</strong></div>
+              <div class="misread-wrong">→ might read as: {{ m.wrongInference }}</div>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    {% if perception.follow_triggers %}
+      <section class="span-3 card perception-like">
+        <h2>Follow triggers</h2>
+        <ul class="trigger-list">
+          {% for t in perception.follow_triggers[:5] %}
+            <li>✓ {{ t }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    {% if perception.bounce_reasons %}
+      <section class="span-3 card perception-dislike">
+        <h2>Bounce reasons</h2>
+        <ul class="trigger-list">
+          {% for b in perception.bounce_reasons[:5] %}
+            <li>✗ {{ b }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+  </div>
+
+{% else %}
+  <p class="muted">No public perception generated yet. Run the pipeline.</p>
+{% endif %}
+{% endblock %}

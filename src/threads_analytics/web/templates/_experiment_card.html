@@ -1,0 +1,43 @@
+<div class="exp-card card exp-{{ e.status }}">
+  <div class="exp-head">
+    <span class="exp-category">{{ e.category }}</span>
+    <span class="exp-metric">{{ e.primary_metric_label }}</span>
+    <span class="exp-source">{{ 'Claude' if e.source == 'suggested_by_claude' else 'you' }}</span>
+    {% if e.verdict %}
+      <span class="exp-verdict verdict-{{ e.verdict.verdict }}">{{ e.verdict.verdict | upper }}</span>
+    {% endif %}
+    <form method="post" action="/experiments/{{ e.id }}/delete" class="exp-delete-form"
+          onsubmit="return confirm('Delete this experiment? This cannot be undone.');">
+      <button type="submit" class="exp-delete-btn" aria-label="Delete experiment" title="Delete">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+      </button>
+    </form>
+  </div>
+  <h3 class="exp-title"><a href="/experiments/{{ e.id }}">{{ e.title }}</a></h3>
+  <p class="exp-hypothesis">{{ e.hypothesis }}</p>
+  {% if e.status == 'active' %}
+    <div class="exp-meta">
+      <span>variant start: {{ e.variant_start.strftime("%Y-%m-%d") if e.variant_start else "—" }}</span>
+      <span>ends: {{ e.variant_end.strftime("%Y-%m-%d") if e.variant_end else "—" }}</span>
+      <span>variant: <strong>{{ e.variant_n }}</strong></span>
+      <span>control: <strong>{{ e.control_n }}</strong></span>
+    </div>
+  {% endif %}
+  {% if e.verdict %}
+    <div class="exp-verdict-summary">
+      {% if e.verdict.effect_size_pct is not none %}
+        <strong>Effect: {{ "%+.0f%%" | format(e.verdict.effect_size_pct * 100) }}</strong>
+        {% if e.verdict.p_value is not none %}
+          · p = {{ "%.3f" | format(e.verdict.p_value) }}
+        {% endif %}
+        · n = {{ e.verdict.variant_n }}v / {{ e.verdict.control_n }}c
+      {% endif %}
+      <p class="muted small">{{ e.verdict.honest_interpretation }}</p>
+    </div>
+  {% endif %}
+</div>

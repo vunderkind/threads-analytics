@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>threads-analytics{% if handle %} · @{{ handle }}{% endif %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <script>
+    // Apply theme before first paint — no flash.
+    (function() {
+      var saved = localStorage.getItem('ta-theme');
+      if (saved === 'dark' || saved === 'light') {
+        document.documentElement.setAttribute('data-theme', saved);
+      }
+      // else: no attribute → CSS falls back to @media (prefers-color-scheme)
+    })();
+    window.toggleTheme = function() {
+      var curr = document.documentElement.getAttribute('data-theme');
+      if (!curr) {
+        // Was OS-default — override to the opposite of what OS is currently showing
+        curr = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      var next = curr === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('ta-theme', next);
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="/static/animate.js" defer></script>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <a href="/" class="sidebar-brand" title="threads-analytics">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M8 12a4 4 0 1 1 4 4"/>
+        <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+      </svg>
+    </a>
+
+    <nav class="sidebar-nav">
+      <a href="/" aria-label="Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12l9-9 9 9"/>
+          <path d="M5 10v10h14V10"/>
+        </svg>
+        <span class="sidebar-tooltip">Home</span>
+      </a>
+      <a href="/experiments" aria-label="Experiments">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 2v7L4 20a2 2 0 0 0 1.7 3h12.6A2 2 0 0 0 20 20L14 9V2"/>
+          <line x1="9" y1="2" x2="15" y2="2"/>
+        </svg>
+        <span class="sidebar-tooltip">Experiments</span>
+      </a>
+      <a href="/perception" aria-label="Perception">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+        <span class="sidebar-tooltip">Perception</span>
+      </a>
+      <a href="/algorithm" aria-label="Algorithm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="4" y1="20" x2="4" y2="10"/>
+          <line x1="10" y1="20" x2="10" y2="4"/>
+          <line x1="16" y1="20" x2="16" y2="14"/>
+          <line x1="22" y1="20" x2="2" y2="20"/>
+        </svg>
+        <span class="sidebar-tooltip">Algorithm</span>
+      </a>
+      <a href="/you" aria-label="You">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span class="sidebar-tooltip">You</span>
+      </a>
+      <a href="/posts" aria-label="Noteworthy posts">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span class="sidebar-tooltip">Noteworthy posts</span>
+      </a>
+    </nav>
+
+    <button class="sidebar-theme" id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle dark mode">
+      <svg class="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+      </svg>
+      <svg class="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+      <span class="sidebar-tooltip">Theme</span>
+    </button>
+
+    <button class="sidebar-run" id="run-now-btn" onclick="triggerRun()" aria-label="Re-run">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"/>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+      </svg>
+      <span class="sidebar-tooltip">Re-run</span>
+    </button>
+  </aside>
+
+  <main class="main-col">
+    <div class="main-inner">
+
+      <div id="run-banner" class="run-banner" hidden>
+        <div class="run-spinner"></div>
+        <div class="run-banner-text">
+          <strong>Pipeline running…</strong>
+          <span id="run-banner-step">starting</span>
+        </div>
+        <div class="run-banner-timer" id="run-banner-timer">0s</div>
+      </div>
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+</div>
+
+<script>
+(function() {
+  const banner = document.getElementById('run-banner');
+  const stepEl = document.getElementById('run-banner-step');
+  const timerEl = document.getElementById('run-banner-timer');
+  const btn = document.getElementById('run-now-btn');
+  let pollInterval = null;
+  let startedAt = null;
+  let wasRunning = false;
+
+  function fmtStep(summary) {
+    if (!summary) return 'starting';
+    if (summary.error) return 'error';
+    if (summary.noteworthy_post_ids !== undefined) return 'finishing up';
+    if (summary.algorithm_inference_run_id !== undefined) return 'noteworthy posts';
+    if (summary.public_perception_run_id !== undefined) return 'algorithm inference';
+    if (summary.new_suggestion_ids !== undefined) return 'public perception';
+    if (summary.you_profile_run_id !== undefined) return 'generating suggestions';
+    if (summary.experiments_auto_completed !== undefined) return 'building you profile';
+    if (summary.experiments_classified_posts !== undefined) return 'evaluating experiments';
+    if (summary.ground_truth_headline !== undefined) return 'classifying experiments';
+    if (summary.affinity !== undefined) return 'computing ground truth';
+    if (summary.topics !== undefined) return 'discovering affinity';
+    if (summary.ingest !== undefined) return 'extracting topics';
+    return 'ingesting data';
+  }
+
+  function tickTimer() {
+    if (!startedAt) return;
+    const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+    timerEl.textContent = elapsed + 's';
+  }
+
+  function showBanner(summary) {
+    if (banner.hidden) {
+      banner.hidden = false;
+      startedAt = Date.now();
+    }
+    stepEl.textContent = fmtStep(summary);
+    if (btn) { btn.disabled = true; }
+    tickTimer();
+  }
+
+  function hideBanner() {
+    banner.hidden = true;
+    startedAt = null;
+    if (btn) { btn.disabled = false; }
+  }
+
+  function pollStatus() {
+    fetch('/run/status').then(r => r.json()).then(data => {
+      tickTimer();
+      if (data.running) {
+        wasRunning = true;
+        showBanner(data.last_summary);
+      } else {
+        if (wasRunning) {
+          clearInterval(pollInterval);
+          pollInterval = null;
+          location.reload();
+          return;
+        }
+        hideBanner();
+      }
+    }).catch(() => {});
+  }
+
+  window.triggerRun = function() {
+    fetch('/run', { method: 'POST' }).then(r => r.json()).then(data => {
+      if (data.status === 'already_running') {
+        showBanner(null);
+      } else {
+        showBanner({});
+      }
+      if (!pollInterval) {
+        pollInterval = setInterval(pollStatus, 2000);
+      }
+    });
+  };
+
+  fetch('/run/status').then(r => r.json()).then(data => {
+    if (data.running) {
+      wasRunning = true;
+      showBanner(data.last_summary);
+      pollInterval = setInterval(pollStatus, 2000);
+    }
+  }).catch(() => {});
+})();
+</script>
+</body>
+</html>

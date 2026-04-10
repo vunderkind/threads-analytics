@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Topics extracted from your content</h1>
+{% if topics %}
+  <div class="topic-grid">
+    {% for t in topics %}
+      <div class="card topic-card">
+        <h3>{{ t.label }}</h3>
+        <p>{{ t.description }}</p>
+        <div class="muted small">
+          {% if t.last_searched_at %}
+            Last searched: {{ t.last_searched_at.strftime("%Y-%m-%d %H:%M") }}
+          {% else %}
+            Not searched yet
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="muted">No topics extracted yet. Run the pipeline first.</p>
+{% endif %}
+{% endblock %}

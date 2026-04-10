@@ -1,0 +1,36 @@
+[project]
+name = "threads-analytics"
+version = "0.1.0"
+description = "Analytics and growth recommender for a personal Threads account, learning from own content and affinity creators."
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "jinja2>=3.1",
+    "httpx>=0.27",
+    "sqlalchemy>=2.0",
+    "pydantic-settings>=2.5",
+    "anthropic>=0.40",
+    "typer>=0.12",
+    "python-dotenv>=1.0",
+    "python-multipart>=0.0.9",
+    "scipy>=1.11",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "ruff>=0.6"]
+
+[project.scripts]
+threads-analytics = "threads_analytics.cli:app"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

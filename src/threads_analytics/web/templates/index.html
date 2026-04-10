@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="profile-hero card">
+  {% if profile and profile.profile_picture_url %}
+    <img class="profile-pic" src="{{ profile.profile_picture_url }}" alt="@{{ profile.username or handle }}">
+  {% else %}
+    <div class="profile-pic profile-pic-fallback">{{ (profile.username or handle)[0] | upper if (profile and profile.username) or handle else "·" }}</div>
+  {% endif %}
+  <div class="profile-info">
+    <h1 class="profile-handle">@{{ profile.username if profile and profile.username else handle }}</h1>
+    {% if profile and profile.biography %}
+      <p class="profile-bio">{{ profile.biography }}</p>
+    {% endif %}
+    <div class="profile-stats">
+      <div class="stat">
+        <div class="stat-value">{{ follower_count if follower_count is not none else "—" }}</div>
+        <div class="stat-label">followers</div>
+      </div>
+      {% if engagement %}
+        <div class="stat">
+          <div class="stat-value">{{ engagement.views }}</div>
+          <div class="stat-label">views (30d)</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">{{ engagement.likes }}</div>
+          <div class="stat-label">likes (30d)</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">{{ engagement.replies }}</div>
+          <div class="stat-label">replies (30d)</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Follower trend</h2>
+  <canvas id="followerChart" height="80"></canvas>
+</section>
+
+<section class="two-col">
+  <div class="card">
+    <h2>Top posts</h2>
+    {% if top_posts %}
+      <ul class="post-list">
+        {% for p in top_posts %}
+          <li>
+            <div class="post-meta">{{ p.likes }} likes · {{ p.replies }} replies · {{ p.views }} views</div>
+            <div class="post-text">{{ p.text }}</div>
+            {% if p.permalink %}<a href="{{ p.permalink }}" target="_blank" rel="noopener">open</a>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No posts ingested yet. Click <strong>Run now</strong>.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Top recommendations</h2>
+    {% if top_recommendations %}
+      <ol class="rec-list">
+        {% for r in top_recommendations %}
+          <li>
+            <div class="rec-title">{{ r.title }}</div>
+            <div class="rec-category">{{ r.category }}</div>
+            <div class="rec-body">{{ r.body }}</div>
+          </li>
+        {% endfor %}
+      </ol>
+      <a href="/recommendations" class="more">See all →</a>
+    {% else %}
+      <p class="muted">No recommendations yet.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card">
+  <h2>Recent runs</h2>
+  <table class="runs">
+    <thead><tr><th>#</th><th>started</th><th>status</th><th>queries</th></tr></thead>
+    <tbody>
+      {% for r in runs %}
+        <tr>
+          <td>{{ r.id }}</td>
+          <td>{{ r.started_at.strftime("%Y-%m-%d %H:%M") if r.started_at else "" }}</td>
+          <td class="status-{{ r.status }}">{{ r.status }}</td>
+          <td>{{ r.queries_used }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<script>
+  const trend = {{ follower_trend | tojson }};
+  if (trend.length > 0) {
+    const ctx = document.getElementById('followerChart');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: trend.map(p => p.when.slice(0, 10)),
+        datasets: [{
+          label: 'Followers',
+          data: trend.map(p => p.followers),
+          tension: 0.3,
+          borderWidth: 2,
+          fill: true,
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>How the algorithm sees you</h1>
+<p class="muted">
+  Signal-by-signal hypothesis grounded in X's open-sourced heavy ranker and Meta's public statements about Threads. Your numbers are facts; claims about what the ranker is <em>doing</em> are hypotheses.
+</p>
+
+{% if algorithm %}
+
+  <div class="page-grid">
+
+    {% if algorithm.highest_roi_lever and algorithm.highest_roi_lever.title %}
+      <section class="span-4 card-hero card-hero-green algo-hero-lever">
+        <div class="roi-tag">Highest-ROI lever <span class="hypothesis-tag">HYPOTHESIS</span></div>
+        <h2>{{ algorithm.highest_roi_lever.title }}</h2>
+        {% if algorithm.highest_roi_lever.mechanism %}
+          <p><strong>Mechanism ·</strong> {{ algorithm.highest_roi_lever.mechanism }}</p>
+        {% endif %}
+        {% if algorithm.highest_roi_lever.expectedImpact %}
+          <p><strong>Expected impact ·</strong> {{ algorithm.highest_roi_lever.expectedImpact }}</p>
+        {% endif %}
+        {% if algorithm.highest_roi_lever.citesResearch %}
+          <p class="cites">{{ algorithm.highest_roi_lever.citesResearch }}</p>
+        {% endif %}
+      </section>
+    {% endif %}
+
+    {% if algorithm.narrative_diagnosis %}
+      <section class="span-2 card algo-narrative-card">
+        <div class="algo-narrative-label">Diagnosis <span class="hypothesis-tag">HYPOTHESIS</span></div>
+        <p>{{ algorithm.narrative_diagnosis }}</p>
+      </section>
+    {% endif %}
+
+    {% if algorithm.inferred_weights %}
+      <section class="span-6 card algo-weights-card">
+        <div class="algo-weights-head">
+          <h2>Inferred signal weights</h2>
+          <span class="hypothesis-tag">HYPOTHESIS</span>
+        </div>
+        <p class="muted small">Claude's estimate of how much each signal is currently dragging your ranking. 0 = no impact, 1 = dominant.</p>
+        <div class="weights-list">
+          {% for name, w in algorithm.inferred_weights.items() %}
+            <div class="weight-row">
+              <div class="weight-label">{{ name.replace('_', ' ') }}</div>
+              <div class="weight-bar"><div class="weight-fill" style="width: {{ (w * 100) | round }}%"></div></div>
+              <div class="weight-value">{{ "%.2f" | format(w) }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {% if algorithm.signals %}
+      <section class="span-6 card signal-carousel-card">
+        <div class="signal-carousel-head">
+          <h2>Signals</h2>
+          <div class="signal-dots" id="signal-dots"></div>
+          <div class="signal-controls">
+            <button class="signal-arrow" data-dir="-1" aria-label="Previous">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button class="signal-arrow" data-dir="1" aria-label="Next">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="signal-carousel" id="signal-carousel">
+          {% for label, signal in algorithm.signals %}
+            {% if signal %}
+              <div class="signal-slide signal-{{ signal.rating or 'neutral' }}" data-index="{{ loop.index0 }}">
+                <div class="signal-slide-head">
+                  <div class="signal-slide-label">{{ label }}</div>
+                  <div class="signal-slide-rating">{{ (signal.rating or 'unknown') | upper }}</div>
+                </div>
+                {% if signal.evidence %}
+                  <div class="signal-slide-evidence">{{ signal.evidence }}</div>
+                {% endif %}
+                {% if signal.inferredImpact %}
+                  <div class="signal-slide-impact">{{ signal.inferredImpact }}</div>
+                {% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+  </div>
+
+<script>
+(function() {
+  const carousel = document.getElementById('signal-carousel');
+  const dotsWrap = document.getElementById('signal-dots');
+  if (!carousel) return;
+  const slides = Array.from(carousel.querySelectorAll('.signal-slide'));
+  if (!slides.length) return;
+
+  // Build dots
+  slides.forEach((s, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'signal-dot';
+    dot.setAttribute('aria-label', 'Signal ' + (i + 1));
+    dot.addEventListener('click', () => showIndex(i));
+    dotsWrap.appendChild(dot);
+  });
+
+  let current = 0;
+  function showIndex(i) {
+    current = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, idx) => s.classList.toggle('active', idx === current));
+    dotsWrap.querySelectorAll('.signal-dot').forEach((d, idx) => d.classList.toggle('active', idx === current));
+  }
+  showIndex(0);
+
+  document.querySelectorAll('.signal-arrow').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dir = parseInt(btn.getAttribute('data-dir'), 10);
+      showIndex(current + dir);
+    });
+  });
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowLeft') showIndex(current - 1);
+    if (e.key === 'ArrowRight') showIndex(current + 1);
+  });
+})();
+</script>
+
+{% else %}
+  <p class="muted">No algorithm inference generated yet. Run the pipeline.</p>
+{% endif %}
+{% endblock %}

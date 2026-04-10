@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Affinity creators</h1>
+{% if locked %}
+  <div class="banner banner-locked">
+    <strong>Locked pending Meta App Review.</strong>
+    Meta's <code>/keyword_search</code> endpoint only returns your own posts in development mode.
+    This page will populate automatically once your app is approved for advanced access — no code change needed.
+  </div>
+{% endif %}
+<p class="muted">Creators discovered via keyword search on your topics, ranked by public engagement.</p>
+{% if creators %}
+  <div class="creator-grid">
+    {% for c in creators %}
+      <div class="card creator-card">
+        <h3>@{{ c.handle }}</h3>
+        <div class="score">score: {{ c.engagement_score }}</div>
+        <ul class="creator-posts">
+          {% for p in c.top_posts %}
+            <li>
+              <div class="post-meta">{{ p.likes }} likes · {{ p.replies }} replies</div>
+              <div class="post-text">{{ p.text }}</div>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="muted">No affinity creators discovered yet.</p>
+{% endif %}
+{% endblock %}

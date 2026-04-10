@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Noteworthy posts</h1>
+<p class="muted">
+  Outliers from your recent posting — breakouts, conversation starters, flops worth learning from.
+  Each one is paired with Claude's algo-aware commentary on why it behaved the way it did, grounded
+  in the documented Threads/X ranking research (reply velocity, conversation depth, self-reply, format diversity).
+</p>
+
+{% if noteworthy %}
+  <div class="noteworthy-list page-grid" id="noteworthy-list">
+    {% for n in noteworthy[:5] %}
+      <div class="span-6 noteworthy-card card category-{{ n.category }}{% if loop.first %} nw-hero{% endif %}" data-index="{{ loop.index0 }}">
+        <div class="nw-feature-hint" aria-hidden="true"></div>
+        <div class="nw-head">
+          <span class="nw-category">{{ n.category.replace('_', ' ') | upper }}</span>
+          {% if n.ratio_vs_median %}
+            <span class="nw-ratio">{{ "%.1f" | format(n.ratio_vs_median) }}× median {{ n.remarkable_metric }}</span>
+          {% else %}
+            <span class="nw-ratio">{{ n.remarkable_metric }}: {{ n.remarkable_value|round(1) }}</span>
+          {% endif %}
+          <span class="nw-date">{{ n.posted_at.strftime("%Y-%m-%d %H:%M") if n.posted_at else "" }}</span>
+        </div>
+        <blockquote class="nw-text">{{ n.text }}</blockquote>
+        <div class="nw-stats">
+          {% if n.views is not none %}<span>{{ n.views }} views</span>{% endif %}
+          {% if n.likes is not none %}<span>{{ n.likes }} likes</span>{% endif %}
+          {% if n.replies is not none %}<span>{{ n.replies }} replies</span>{% endif %}
+          {% if n.permalink %}<a href="{{ n.permalink }}" target="_blank" rel="noopener">open on Threads ↗</a>{% endif %}
+        </div>
+        {% if n.commentary %}
+          <div class="nw-commentary">
+            <div class="nw-label">Claude's read</div>
+            <p>{{ n.commentary }}</p>
+          </div>
+        {% endif %}
+        {% if n.algo_hypothesis %}
+          <div class="nw-algo">
+            <div class="nw-label">
+              Plausible ranker mechanism
+              <span class="hypothesis-tag" title="This is a hypothesis grounded in documented X heavy-ranker weights and Meta's public Threads statements. It is not a direct observation of Threads's internals.">HYPOTHESIS</span>
+            </div>
+            <p>{{ n.algo_hypothesis }}</p>
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="muted">No noteworthy posts found yet. Run the pipeline to detect outliers and generate commentary.</p>
+{% endif %}
+
+<script>
+(function() {
+  const STORAGE_KEY = 'nw-hero-index';
+  const list = document.getElementById('noteworthy-list');
+  if (!list) return;
+  const cards = Array.from(list.querySelectorAll('.noteworthy-card'));
+  if (!cards.length) return;
+
+  function promote(index) {
+    cards.forEach((c, i) => {
+      c.classList.toggle('nw-hero', i === index);
+    });
+    // Move the chosen hero to the top of the grid so the layout reads hero → rest
+    const hero = cards[index];
+    if (hero && list.firstElementChild !== hero) {
+      list.insertBefore(hero, list.firstElementChild);
+    }
+  }
+
+  // Restore from localStorage (index is stable: it's the server-rendered loop index)
+  const saved = parseInt(localStorage.getItem(STORAGE_KEY), 10);
+  if (!isNaN(saved) && saved >= 0 && saved < cards.length) {
+    promote(saved);
+  }
+
+  cards.forEach((card, i) => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('a')) return;
+      promote(i);
+      localStorage.setItem(STORAGE_KEY, String(i));
+    });
+  });
+})();
+</script>
+{% endblock %}
