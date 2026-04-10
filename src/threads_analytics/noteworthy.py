@@ -525,7 +525,9 @@ def generate_noteworthy_commentary(run: Run) -> list[int]:
 
     user_msg = (
         f"{schema}\n\n"
-        f"INTERNAL BENCHMARKS (the user's own distribution):\n{json.dumps(benchmarks_payload, ensure_ascii=False, indent=2, default=str)}\n\n"
+        f"CATEGORY LESSONS (the learning frame for each noteworthy category):\n"
+        f"{json.dumps(CATEGORY_META, ensure_ascii=False, indent=2)}\n\n"
+        f"INTERNAL BENCHMARKS (the creator's own distribution):\n{json.dumps(benchmarks_payload, ensure_ascii=False, indent=2, default=str)}\n\n"
         f"NOTEWORTHY POSTS TO ANALYZE:\n{json.dumps(cand_payload, ensure_ascii=False, indent=2)}"
     )
 
