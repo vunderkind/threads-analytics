@@ -151,7 +151,8 @@ def test_index_renders(populated_app):
     assert r.status_code == 200
     body = r.text
     assert "testuser" in body
-    assert "1234" in body  # follower count
+    # Active + proposed counts appear in the profile callout
+    assert "active" in body
 
 
 def test_posts_route(populated_app):

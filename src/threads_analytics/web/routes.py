@@ -600,7 +600,7 @@ def build_router(templates: Jinja2Templates) -> APIRouter:
 
     @router.get("/recommendations")
     def recommendations_redirect() -> RedirectResponse:
-        return RedirectResponse("/suggestions", status_code=301)
+        return RedirectResponse("/experiments#suggestions", status_code=301)
 
     @router.get("/learning")
     def learning_redirect() -> RedirectResponse:

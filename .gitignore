@@ -1,4 +1,5 @@
 .env
+.claude
 data/*.db
 data/*.db-journal
 __pycache__/
